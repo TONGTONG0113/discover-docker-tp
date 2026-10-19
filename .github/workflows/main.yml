@@ -1,4 +1,4 @@
-
+```yaml
 name: CI devops
 
 # Run CI on main and develop pushes, and on pull requests.
@@ -36,7 +36,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
-          run: >
           mvn -B -e -X verify sonar:sonar
           -Dsonar.projectKey=TONGTONG0113_discover-docker-tp
           -Dsonar.organization=tongtong0113
@@ -89,3 +88,4 @@ jobs:
           context: ./httpd
           push: true
           tags: allgreenallright/docker-tp-httpd:latest
+```
