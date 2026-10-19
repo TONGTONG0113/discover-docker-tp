@@ -29,3 +29,27 @@ Les images sont taguées avec le nom du compte Docker Hub et une version, par ex
 
 1-10.
 Un registre en ligne permet de partager les images avec les membres d’une équipe et de les utiliser sur d’autres machines sans reconstruire le projet à partir du code source. Il facilite la distribution des versions, le déploiement et l’intégration dans des pipelines CI/CD.
+
+2-1.
+Testcontainers est une bibliothèque Java qui permet de lancer des conteneurs Docker pendant les tests automatisés. Dans ce projet, un conteneur PostgreSQL est démarré afin de fournir une base de données pour tester les opérations de l’application. Cela permet d’exécuter des tests d’intégration dans un environnement proche de celui utilisé en production.
+
+2-2
+Les variables sécurisées, telles que les GitHub Actions Secrets, permettent de stocker des informations sensibles comme le nom d’utilisateur et le jeton d’accès Docker Hub. Elles permettent aux workflows d’utiliser ces informations sans les écrire directement dans le code source ni les exposer dans un dépôt public.
+
+Dans ce projet, nous utilisons notamment les secrets suivants :
+- DOCKERHUB_USERNAME
+- DOCKERHUB_TOKEN
+- SONAR_TOKEN
+
+2-3
+La configuration needs: test-backend garantit que le job de construction et de publication des images Docker ne démarre qu’après la réussite du job test-backend.
+
+Sans cette dépendance, GitHub Actions peut exécuter les deux jobs en parallèle. Les images Docker pourraient alors être publiées même si les tests de l’application échouent.
+
+2-4
+La publication des images Docker sur Docker Hub permet de les stocker dans un registre distant. D’autres machines ou environnements peuvent ensuite télécharger et exécuter ces images sans devoir reconstruire l’application à partir du code source. Cela facilite la livraison et le déploiement de l’application.
+
+Dans ce projet, les trois images publiées sont :
+- allgreenallright/docker-tp-backend:latest
+- allgreenallright/docker-tp-database:latest
+- allgreenallright/docker-tp-httpd:latest
