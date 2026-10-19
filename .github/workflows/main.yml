@@ -1,4 +1,4 @@
-```yaml
+
 name: CI devops
 
 # Run CI on main and develop pushes, and on pull requests.
@@ -88,4 +88,4 @@ jobs:
           context: ./httpd
           push: true
           tags: allgreenallright/docker-tp-httpd:latest
-```
+          
