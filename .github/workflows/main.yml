@@ -73,3 +73,15 @@ jobs:
           context: ./httpd
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: allgreenallright/docker-tp-httpd:latest
+
+      # Analyze code quality on SonarCloud.
+      - name: Analyze with SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: >
+          mvn -B verify sonar:sonar
+          -Dsonar.projectKey=TONGTONG0113_discover-docker-tp
+          -Dsonar.organization=tongtong0113
+          -Dsonar.host.url=https://sonarcloud.io
+          -Dsonar.token=${SONAR_TOKEN}
+          --file backend/simple-api-student/pom.xml
