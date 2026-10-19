@@ -1,7 +1,7 @@
 
 name: CI devops
 
-# Run tests on main and develop, and on pull requests.
+# Run CI on main and develop pushes, and on pull requests.
 "on":
   push:
     branches:
@@ -10,69 +10,26 @@ name: CI devops
   pull_request:
 
 jobs:
-  # Job 1: build the backend and run tests.
+  # Job 1: build, test and analyze the backend.
   test-backend:
     runs-on: ubuntu-24.04
 
     steps:
+      # Download the repository source code.
       - name: Checkout code
         uses: actions/checkout@v4
 
       # Install Java 21 and cache Maven dependencies.
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: temurin
           cache: maven
 
-      # Run Maven build, unit tests and integration tests.
+      # Build the application and run unit and integration tests.
       - name: Build and test with Maven
         run: mvn -B clean verify --file backend/simple-api-student/pom.xml
-
-  # Job 2: build all images after backend tests pass.
-  build-and-push-docker-image:
-    needs: test-backend
-    runs-on: ubuntu-24.04
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Authenticate using GitHub repository secrets.
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      # Prepare Docker Buildx for image builds.
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Build backend; publish only on main.
-      - name: Build image and push backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend/simple-api-student
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: allgreenallright/docker-tp-backend:latest
-
-      # Build database; publish only on main.
-      - name: Build image and push database
-        uses: docker/build-push-action@v6
-        with:
-          context: ./database
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: allgreenallright/docker-tp-database:latest
-
-      # Build HTTPD; publish only on main.
-      - name: Build image and push httpd
-        uses: docker/build-push-action@v6
-        with:
-          context: ./httpd
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          tags: allgreenallright/docker-tp-httpd:latest
 
       # Analyze code quality on SonarCloud.
       - name: Analyze with SonarCloud
@@ -85,3 +42,49 @@ jobs:
           -Dsonar.host.url=https://sonarcloud.io
           -Dsonar.token=${SONAR_TOKEN}
           --file backend/simple-api-student/pom.xml
+
+  # Job 2: build and publish images only after tests and analysis pass.
+  build-and-push-docker-image:
+    needs: test-backend
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+
+    steps:
+      # Download the repository source code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Authenticate to Docker Hub using repository secrets.
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Set up Docker Buildx.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build and publish the backend image.
+      - name: Build image and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend/simple-api-student
+          push: true
+          tags: allgreenallright/docker-tp-backend:latest
+
+      # Build and publish the database image.
+      - name: Build image and push database
+        uses: docker/build-push-action@v6
+        with:
+          context: ./database
+          push: true
+          tags: allgreenallright/docker-tp-database:latest
+
+      # Build and publish the HTTPD image.
+      - name: Build image and push httpd
+        uses: docker/build-push-action@v6
+        with:
+          context: ./httpd
+          push: true
+          tags: allgreenallright/docker-tp-httpd:latest
