@@ -36,7 +36,8 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
-          mvn -B -e -X verify sonar:sonar
+          mvn -B -e verify
+          org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar
           -Dsonar.projectKey=TONGTONG0113_discover-docker-tp
           -Dsonar.organization=tongtong0113
           -Dsonar.host.url=https://sonarcloud.io
@@ -88,4 +89,3 @@ jobs:
           context: ./httpd
           push: true
           tags: allgreenallright/docker-tp-httpd:latest
-          
