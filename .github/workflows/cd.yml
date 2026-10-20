@@ -35,8 +35,9 @@ jobs:
         with:
           context: ./backend/simple-api-student
           push: true
-          tags: allgreenallright/docker-tp-backend:latest
-          tags: allgreenallright/docker-tp-backend:test-v2
+          tags: |
+            allgreenallright/docker-tp-backend:latest
+            allgreenallright/docker-tp-backend:test-v2
 
       - name: Build image and push database
         uses: docker/build-push-action@v6
