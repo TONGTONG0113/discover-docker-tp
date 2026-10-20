@@ -36,6 +36,7 @@ jobs:
           context: ./backend/simple-api-student
           push: true
           tags: allgreenallright/docker-tp-backend:latest
+          tags: allgreenallright/docker-tp-backend:latest-2
 
       - name: Build image and push database
         uses: docker/build-push-action@v6
@@ -50,4 +51,3 @@ jobs:
           context: ./httpd
           push: true
           tags: allgreenallright/docker-tp-httpd:latest
-          
