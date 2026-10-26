@@ -111,7 +111,7 @@ jobs:
 
       - name: Deploy with Ansible
         run: |
-          ansible-playbook \
+          ansible-playbook -vvv \
             -i "$RUNNER_TEMP/inventory.yml" \
             ansible/site.yml \
             --private-key ~/.ssh/deploy_key \
