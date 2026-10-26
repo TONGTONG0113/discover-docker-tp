@@ -53,3 +53,213 @@ Dans ce projet, les trois images publiées sont :
 - allgreenallright/docker-tp-backend:latest
 - allgreenallright/docker-tp-database:latest
 - allgreenallright/docker-tp-httpd:latest
+
+3-1
+
+1. Configuration de l'inventaire
+
+L'inventaire Ansible est défini dans le fichier `ansible/inventories/setup.yml`. Il indique les serveurs distants à administrer et les paramètres de connexion.
+
+```yaml
+all:
+  vars:
+    ansible_user: admin
+    ansible_ssh_private_key_file: /path/to/private/key
+    ansible_python_interpreter: /opt/docker_venv/bin/python
+  children:
+    prod:
+      hosts:
+        ruofan.zhao.takima.school:
+```
+
+- `all` regroupe tous les hôtes de l'inventaire.
+- `vars` définit les variables communes aux hôtes.
+- `ansible_user` indique l'utilisateur SSH utilisé pour la connexion.
+- `ansible_ssh_private_key_file` indique le chemin de la clé privée SSH.
+- `ansible_python_interpreter` définit l'interpréteur Python utilisé sur le serveur distant.
+- `children` permet de regrouper les hôtes dans des groupes.
+- `prod` représente le groupe des serveurs de production.
+- `ruofan.zhao.takima.school` est le serveur distant administré.
+
+La clé privée SSH doit rester confidentielle et ne doit pas être ajoutée au dépôt Git.
+
+2. Vérification de la connexion
+
+```bash
+ansible all -i inventories/setup.yml -m ping
+```
+
+Cette commande utilise le module `ping` pour vérifier que le serveur est joignable et qu'Ansible peut exécuter des modules sur celui-ci. Le résultat `pong` confirme que la connexion fonctionne.
+
+3. Collecte des informations système
+
+```bash
+ansible all -i inventories/setup.yml -m setup -a "filter=ansible_distribution*"
+```
+
+Le module `setup` collecte les informations du système distant, appelées *facts*. Elles permettent notamment d'adapter les tâches à la distribution Linux utilisée.
+
+4. Gestion des paquets
+
+```bash
+ansible all -i inventories/setup.yml -m apt -a "name=apache2 state=absent" --become
+```
+
+Cette commande utilise le module `apt` pour s'assurer que le paquet Apache2 est absent du serveur. L'option `--become` permet d'obtenir les privilèges nécessaires à la gestion des paquets système.
+
+Ansible applique l'état demandé. Si Apache2 est déjà absent, une nouvelle exécution ne devrait pas modifier le système.
+
+
+3-2
+
+1. Structure des Playbooks
+
+Un Playbook Ansible décrit les opérations à exécuter sur un ou plusieurs hôtes. Il est écrit au format YAML et contient notamment les hôtes cibles, les paramètres d'exécution et les rôles ou tâches à exécuter.
+
+Le projet utilise plusieurs Playbooks indépendants :
+
+- `docker-playbook.yml` : installation de Docker.
+- `network-playbook.yml` : création du réseau Docker.
+- `database-playbook.yml` : déploiement de PostgreSQL.
+- `backend-playbook.yml` : déploiement de l'API Spring Boot.
+- `httpd-playbook.yml` : déploiement du serveur HTTPD.
+- `site.yml` : orchestration de l'ensemble des rôles.
+
+2. Installation de Docker avec un Role
+
+Les tâches d'installation de Docker sont regroupées dans `roles/docker/tasks/main.yml`. Elles comprennent :
+
+1. L'installation des paquets nécessaires.
+2. L'ajout de la clé GPG et du dépôt officiel Docker.
+3. L'installation de Docker.
+4. La création d'un environnement virtuel Python.
+5. L'installation du SDK Docker pour Python.
+6. Le démarrage du service Docker.
+
+Le Playbook appelle ensuite le rôle :
+
+```yaml
+---
+- hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - docker
+```
+
+Cette organisation sépare la logique d'installation du fichier principal et facilite la réutilisation des tâches.
+
+3. Orchestration avec `site.yml`
+
+Le fichier `site.yml` centralise le déploiement de l'application :
+
+```yaml
+---
+- name: Deploy application infrastructure
+  hosts: all
+  become: true
+  roles:
+    - docker
+    - network
+    - database
+    - backend
+    - httpd
+```
+
+Les rôles sont exécutés dans l'ordre indiqué : installation de Docker, création du réseau, lancement de la base de données, déploiement du backend, puis lancement du proxy HTTPD.
+
+4. Vérification des Playbooks
+
+Avant l'exécution, la syntaxe peut être vérifiée avec :
+
+```bash
+ansible-playbook -i inventories/setup.yml site.yml --syntax-check
+```
+
+Le déploiement est lancé avec :
+
+```bash
+ansible-playbook -i inventories/setup.yml site.yml
+```
+
+Lors des vérifications du projet, l'exécution s'est terminée sans erreur. Une nouvelle exécution a renvoyé `changed=0` et `failed=0`, ce qui montre que les tâches exécutées n'avaient pas besoin de modifier l'état du serveur à ce moment-là.
+
+
+3-3
+
+1. Principe général
+
+Le module `community.docker.docker_container` permet de gérer le cycle de vie des conteneurs Docker à partir d'Ansible. Il permet notamment de définir le nom du conteneur, l'image, l'état souhaité, la politique de redémarrage, les variables d'environnement, les volumes et les réseaux.
+
+Dans ce projet, les conteneurs sont déployés avec des rôles distincts pour la base de données, l'API et le proxy HTTPD.
+
+2. Déploiement de PostgreSQL
+
+Le rôle `database` construit une image personnalisée nommée `student-database:latest`, puis démarre le conteneur PostgreSQL.
+
+```yaml
+- name: Create PostgreSQL database container
+  community.docker.docker_container:
+    name: database
+    image: student-database:latest
+    state: started
+    restart_policy: unless-stopped
+    env:
+      POSTGRES_DB: db
+      POSTGRES_USER: usr
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - name: app-network
+```
+
+- `name` définit le nom du conteneur.
+- `image` indique l'image Docker utilisée.
+- `state: started` demande que le conteneur soit démarré.
+- `restart_policy: unless-stopped` permet son redémarrage automatique, sauf arrêt explicite.
+- `env` définit le nom de la base, l'utilisateur et le mot de passe.
+- `volumes` conserve les données PostgreSQL dans un volume Docker nommé `postgres-data`.
+- `networks` connecte le conteneur au réseau `app-network`.
+
+L'image personnalisée contient les scripts SQL d'initialisation. PostgreSQL ne les exécute automatiquement que lorsque le répertoire de données est initialisé pour la première fois.
+
+3. Déploiement du backend
+
+Le rôle `backend` construit l'image `simple-api-student:latest` à partir du Dockerfile du projet, puis démarre le conteneur :
+
+```yaml
+- name: Start backend container
+  community.docker.docker_container:
+    name: backend
+    image: simple-api-student:latest
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: app-network
+```
+
+Le backend est connecté au même réseau que la base de données. Il utilise la configuration Spring Boot du projet pour se connecter à PostgreSQL via le nom de service `database`, sur le port `5432`.
+
+Le Dockerfile du backend construit l'application avec Maven, puis exécute le fichier JAR dans une image Java d'exécution.
+
+4. Déploiement du proxy HTTPD
+
+Le rôle `httpd` construit l'image `student-httpd:latest` à partir du répertoire `httpd/`, puis démarre le conteneur :
+
+```yaml
+- name: Start HTTPD container
+  community.docker.docker_container:
+    name: httpd
+    image: student-httpd:latest
+    state: started
+    restart_policy: unless-stopped
+    ports:
+      - "8083:80"
+    networks:
+      - name: app-network
+```
+
+- `ports: "8083:80"` publie le port 80 du conteneur sur le port 8083 du serveur.
+- Le réseau `app-network` permet à HTTPD de communiquer avec le backend.
+- La configuration Apache utilise `ProxyPass` et `ProxyPassReverse` pour transmettre les
