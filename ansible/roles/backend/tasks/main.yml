@@ -1,0 +1,33 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/backend
+
+- name: Create backend build directory
+  ansible.builtin.file:
+    path: /opt/backend-build
+    state: directory
+    mode: "0755"
+
+- name: Copy backend project files
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../backend/simple-api-student/"
+    dest: /opt/backend-build/
+    mode: preserve
+
+- name: Build backend Docker image
+  community.docker.docker_image:
+    name: simple-api-student
+    tag: latest
+    source: build
+    build:
+      path: /opt/backend-build
+
+- name: Start backend container
+  community.docker.docker_container:
+    name: backend
+    image: simple-api-student:latest
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: app-network
+

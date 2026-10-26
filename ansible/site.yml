@@ -1,0 +1,10 @@
+---
+- name: Deploy application infrastructure
+  hosts: all
+  become: true
+  roles:
+    - docker
+    - network
+    - database
+    - backend
+    - httpd
