@@ -261,5 +261,20 @@ Le rôle `httpd` construit l'image `student-httpd:latest` à partir du répertoi
 ```
 
 - `ports: "8083:80"` publie le port 80 du conteneur sur le port 8083 du serveur.
-- Le réseau `app-network` permet à HTTPD de communiquer avec le backend.
-- La configuration Apache utilise `ProxyPass` et `ProxyPassReverse` pour transmettre les
+- Le réseau app-network permet à HTTPD de communiquer avec le backend.
+- La configuration Apache utilise ProxyPass et ProxyPassReverse pour transmettre les requêtes au backend.
+
+5. Vérification du déploiement
+
+Le fonctionnement a été vérifié à l'aide de la commande suivante :
+
+ansible all -i inventories/setup.yml -m shell -a "curl -i http://localhost:8083/" --become
+
+Le serveur a répondu avec le statut HTTP 200 et le contenu JSON suivant :
+
+{
+  "id": 1,
+  "content": "Hello, World!"
+}
+
+Les données PostgreSQL ont également été vérifiées : la table departments contient trois enregistrements et la table students en contient quatre.
