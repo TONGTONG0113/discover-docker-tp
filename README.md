@@ -278,3 +278,6 @@ Le serveur a répondu avec le statut HTTP 200 et le contenu JSON suivant :
 }
 
 Les données PostgreSQL ont également été vérifiées : la table departments contient trois enregistrements et la table students en contient quatre.
+
+Is it really safe to deploy automatically every new image on the hub?
+Ce n’est pas totalement sécurisé. Si un serveur déploie automatiquement chaque nouvelle image provenant de Docker Hub, des images malveillantes, des images compromises ou des versions non testées pourraient se retrouver directement dans l’environnement de production.
