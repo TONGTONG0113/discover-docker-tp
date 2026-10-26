@@ -1,35 +1,17 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# tasks file for roles/httpd
-
-- name: Create HTTPD build directory
-  ansible.builtin.file:
-    path: /opt/httpd-build
-    state: directory
-    mode: "0755"
-
-- name: Copy HTTPD project files
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../httpd/"
-    dest: /opt/httpd-build/
-    mode: preserve
-
-- name: Build HTTPD Docker image
+- name: Pull HTTPD image from Docker Hub
   community.docker.docker_image:
-    name: student-httpd
-    tag: latest
-    source: build
-    build:
-      path: /opt/httpd-build
+    name: "allgreenallright/docker-tp-httpd:{{ image_tag }}"
+    source: pull
 
 - name: Start HTTPD container
   community.docker.docker_container:
     name: httpd
-    image: student-httpd:latest
+    image: "allgreenallright/docker-tp-httpd:{{ image_tag }}"
     state: started
     restart_policy: unless-stopped
+    pull: true
     ports:
-      - "8083:80"
+      - "8080:80"
     networks:
       - name: app-network
-

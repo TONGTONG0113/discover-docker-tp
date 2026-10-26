@@ -1,42 +1,21 @@
-
 ---
 - name: Create PostgreSQL data volume
   community.docker.docker_volume:
     name: postgres-data
     state: present
 
-- name: Create database build directory
-  ansible.builtin.file:
-    path: /opt/database-build/init
-    state: directory
-    mode: "0755"
-
-- name: Copy database Dockerfile
-  ansible.builtin.copy:
-    src: Dockerfile
-    dest: /opt/database-build/Dockerfile
-    mode: "0644"
-
-- name: Copy SQL initialization scripts
-  ansible.builtin.copy:
-    src: "init/"
-    dest: /opt/database-build/init/
-    mode: "0644"
-
-- name: Build custom PostgreSQL image
+- name: Pull database image from Docker Hub
   community.docker.docker_image:
-    name: student-database
-    tag: latest
-    source: build
-    build:
-      path: /opt/database-build
+    name: "allgreenallright/docker-tp-database:{{ image_tag }}"
+    source: pull
 
-- name: Create PostgreSQL database container
+- name: Start PostgreSQL database container
   community.docker.docker_container:
     name: database
-    image: student-database:latest
+    image: "allgreenallright/docker-tp-database:{{ image_tag }}"
     state: started
     restart_policy: unless-stopped
+    pull: true
     env:
       POSTGRES_DB: db
       POSTGRES_USER: usr
