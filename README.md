@@ -255,12 +255,12 @@ Le rôle `httpd` construit l'image `student-httpd:latest` à partir du répertoi
     state: started
     restart_policy: unless-stopped
     ports:
-      - "8083:80"
+      - "8080:80"
     networks:
       - name: app-network
 ```
 
-- `ports: "8083:80"` publie le port 80 du conteneur sur le port 8083 du serveur.
+- `ports: "8080:80"` publie le port 80 du conteneur sur le port 8080 du serveur.
 - Le réseau app-network permet à HTTPD de communiquer avec le backend.
 - La configuration Apache utilise ProxyPass et ProxyPassReverse pour transmettre les requêtes au backend.
 
@@ -268,7 +268,7 @@ Le rôle `httpd` construit l'image `student-httpd:latest` à partir du répertoi
 
 Le fonctionnement a été vérifié à l'aide de la commande suivante :
 
-ansible all -i inventories/setup.yml -m shell -a "curl -i http://localhost:8083/" --become
+ansible all -i inventories/setup.yml -m shell -a "curl -i http://localhost:8080/" --become
 
 Le serveur a répondu avec le statut HTTP 200 et le contenu JSON suivant :
 
