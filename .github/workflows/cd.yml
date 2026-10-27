@@ -108,6 +108,38 @@ jobs:
             hosts:
               "${SSH_HOST}":
           EOF_INVENTORY
+          
+      - name: Test SSH connection
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          set -eu
+          test -s ~/.ssh/deploy_key || {
+            echo "ERROR: SSH private key is missing or empty"
+            exit 1
+          }
+          test -n "$SSH_HOST" || {
+            echo "ERROR: SSH_HOST secret is empty"
+            exit 1
+          }
+          test -n "$SSH_USER" || {
+            echo "ERROR: SSH_USER secret is empty"
+            exit 1
+          }
+          ssh -vv \
+            -i ~/.ssh/deploy_key \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "$SSH_USER@$SSH_HOST" \
+            "echo SSH_CONNECTION_OK"
+
+      - name: Test Ansible connection
+        run: |
+          ansible all \
+            -i "$RUNNER_TEMP/inventory.yml" \
+            -m ping \
+            -vvv
 
       - name: Deploy with Ansible
         run: |
