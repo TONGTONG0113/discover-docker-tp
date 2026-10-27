@@ -1,13 +1,13 @@
 ---
 - name: Pull backend image from Docker Hub
   community.docker.docker_image:
-    name: "allgreenallright/docker-tp-backend:{{ image_tag }}"
+    name: "allgreenallright/docker-tp-backend:{{ vault_image_tag  }}"
     source: pull
 
 - name: Start backend container
   community.docker.docker_container:
     name: backend
-    image: "allgreenallright/docker-tp-backend:{{ image_tag }}"
+    image: "allgreenallright/docker-tp-backend:{{ vault_image_tag }}"
     state: started
     restart_policy: unless-stopped
     pull: true

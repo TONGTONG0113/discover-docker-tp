@@ -147,9 +147,15 @@ jobs:
             -vvv
 
       - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
+          printf '%s' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/vault-password"
+          chmod 600 "$RUNNER_TEMP/vault-password"
+
           ansible-playbook -vvv \
             -i "$RUNNER_TEMP/inventory.yml" \
             ansible/site.yml \
             --private-key ~/.ssh/deploy_key \
-            -e "image_tag=${{ github.event.workflow_run.head_sha }}"
+            --vault-password-file "$RUNNER_TEMP/vault-password"
+
