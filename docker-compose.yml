@@ -23,12 +23,20 @@ services:
     networks:
       - app-network
 
+  front:
+    build: ./front
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
   httpd:
     build: ./httpd
     ports:
       - "8083:80"
     depends_on:
       - backend
+      - front
     networks:
       - app-network
 
